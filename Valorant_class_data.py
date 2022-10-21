@@ -3,6 +3,8 @@ import string
 import numpy as np
 import pandas as pd
 
+import matplotlib.pyplot as plt
+
 import time
 import datetime
 
@@ -21,20 +23,76 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-#URL:str  = "https://dak.gg/valorant/en/profile/DSP%20KimGyuTae-1111"
-#URL:str  = r"https://dak.gg/valorant/en/profile/walle-cotta"
-#URL:str  = r"https://dak.gg/valorant/en/profile/ilsoto-beth3"
-URL:str  = r"https://dak.gg/valorant/en/profile/tabwesley-saya"
+from functools import wraps
+
+#URL  = r"https://dak.gg/valorant/en/profile/DSP%20KimGyuTae-1111"
+#URL  = r"https://dak.gg/valorant/en/profile/walle-cotta"
+URL  = r"https://dak.gg/valorant/en/profile/ilsoto-beth3"
+#URL = r"https://dak.gg/valorant/en/profile/tabwesley-saya"
 
 #Cotta_user_name:str = 'aAa cutefatb0y#fat'
 
-class ValorantWebScrapping:
+class Utilities(object):
+
+    @staticmethod  # no default first argument in logger function
+    def time_func(func):  # accepts a function
+        @wraps(func)  # good practice https://docs.python.org/2/library/functools.html#functools.wraps
+        def wrapper(self, *args, **kwargs):  # explicit self, which means this decorator better be used inside classes only
+
+            t1 = time.time()
+            result = func(self, *args, **kwargs)
+            t2 = time.time()
+            #print(f'Function {func.__name__!r} executed in {(t2-t1):.4f}s')
+            print("\n")
+            print("*" * 60)
+
+            print('Function {} executed in {:.4f}'.format(func.__name__, t2 - t1))
+
+            print("*" * 60)
+            print("\n")
+
+            return result
+        return wrapper
+
+    @staticmethod  # no default first argument in logger function
+    def chrome_window_settings(func):  # accepts a function
+        @wraps(func)  # good practice https://docs.python.org/2/library/functools.html#functools.wraps
+        def wrapper(self, *args, **kwargs):  # explicit self, which means this decorator better be used inside classes only
+
+            # * Webdriver chrome activate
+            Driver = webdriver.Chrome(self.Path_chrome_driver)
+            Driver.get(self.URL)
+
+            # * Waiting time
+            Driver.implicitly_wait(self.Time_wait_value)
+
+            XPATH_button_update = '//*[@id="__next"]/main/div[4]/header/div/div/div[1]/button[1]'
+        
+            # *
+            Button_click_update = Driver.find_element(By.XPATH, XPATH_button_update)
+            Button_click_update.click()
+
+            result = func(self, Driver)
+
+            Driver.quit()
+
+            return result
+        return wrapper
+
+class ValorantWebScrapping(object):
 
     def __init__(self, **kwargs) -> None:
 
         # * Instance attributes
         self.URL = kwargs.get('url', None)
-        self.Path_chrome_driver = r"C:\Users\Cesar\Dropbox\PC\Desktop\chromedriver.exe"
+        self.Folder_path = kwargs.get('folder', None)
+        self.Save_dataframe = kwargs.get('SD', None)
+        self.Table_chosen = kwargs.get('table', None)
+        
+        # *
+        self.Path_chrome_driver = r"C:\Users\Cesar\Dropbox\PC\Desktop\New folder\chromedriver.exe"
+        self.Time_wait_value = 4
+        self.Header_list = []
 
         # * Folder attribute (ValueError, TypeError)
         if self.URL == None:
@@ -73,78 +131,49 @@ class ValorantWebScrapping:
     @Path_chrome_driver_property.setter
     def Path_chrome_driver_property(self, New_value):
         self.Path_chrome_driver = New_value
+
+    # ? Decorator
+    @staticmethod
+    def save_figure(Save_figure: bool, Dataframe: pd.DataFrame, XPATH_player_name: str, Name_header: str, Folder_path: str) -> None:
+
+        if(Save_figure == True):
+            
+            Dataframe_save = 'Dataframe_{}_{}.csv'.format(Name_header, XPATH_player_name)
+            Dataframe_save_folder = os.path.join(Folder_path, Dataframe_save)
+            Dataframe.to_csv(Dataframe_save_folder)
+
+        else:
+            pass
     
-    def extract_info_agents_valorant(self):
 
-        XPATH_button_update = '//*[@id="__next"]/main/div[4]/header/div/div/div[1]/button[1]'
-
-    def extract_info_tables_valorant(self):
-
-        # * General parameters
-        Agents = 'Agents'
-        Maps = 'Maps'
+    @Utilities.time_func
+    @Utilities.chrome_window_settings
+    def extract_info_table_valorant(self, Driver):
+        
+        # *
+        XPATH_stats_table = '//*[@id="__next"]/main/div[4]/div[2]/table'
+        XPATH_button_Act_1 = '//*[@id="__next"]/main/div[4]/header/dl/div[2]/dd[1]/a'
+        XPATH_player_name = '//*[@id="__next"]/main/div[4]/header/div/div/h2/span[1]'
 
         # *
-        Time_wait_value = 1
-        Header_list = []
+        Player_name = Driver.find_element(By.XPATH, XPATH_player_name).text
 
         # *
-        Tables_info = (Agents, Maps)
+        Button_click_Act_1 = Driver.find_element(By.XPATH, XPATH_button_Act_1)
+        Button_click_Act_1.click()
 
-        XPATH_button_update = '//*[@id="__next"]/main/div[4]/header/div/div/div[1]/button[1]'
-        XPATH_button_maps = '//*[@id="__next"]/main/div[4]/ul[2]/li[2]/button'
-
-        XPATH_name = '//*[@id="__next"]/main/div[4]/header/div/div/h2/span[1]'
-        XPATH_table = '//*[@id="__next"]/main/div[4]/div[1]/table'
-        XPATH_table_competitive = '//*[@id="__next"]/main/div[4]/dl/div[1]'
-
-        #XPATH_write_name:str = '//*[@id="__next"]/main/section/div/form/input'
-        #XPATH_write_name_button:str = '//*[@id="__next"]/main/section/div/form/button/svg'
-        
-        # * Webdriver chrome activate
-        Driver = webdriver.Chrome(Path_chrome_driver)
-        Driver.get(self.URL)
-
-        # * Waiting time
-        Driver.implicitly_wait(Time_wait_value)
-        
-        Button_click_update = Driver.find_element(By.XPATH, XPATH_button_update)
-        Button_click_update.click()
-        
-        time.sleep(4)
-
-        # * Find name
-        Player_name = Driver.find_element(By.XPATH, XPATH_name).text
-        
-        # * Table competitive
-        Table_competitive = Driver.find_element(By.XPATH, XPATH_table_competitive)
-        Table_competitive_header_ranking = Table_competitive.find_element(By.TAG_NAME, 'div')
-        Table_competitive_scores = Table_competitive.find_element(By.TAG_NAME, 'dd')
-
-        Table_competitive_header_mode = Table_competitive_header_ranking.find_elements(By.TAG_NAME, 'strong')
-        Table_competitive_header_score = Table_competitive_header_ranking.find_elements(By.TAG_NAME, 'p')
-
-        Table_competitive_scores_cells = Table_competitive_scores.find_elements(By.TAG_NAME, 'div')
-
-        for Index, Row in enumerate(Table_competitive_scores_cells):
-
-            Columns = Table_competitive_scores_cells[Index].find_elements(By.TAG_NAME, 'dt')
-            Columns = Table_competitive_scores_cells[Index].find_elements(By.TAG_NAME, 'span')
-
-        if Table_chosen is Maps:
-
-            Button_click_map = Driver.find_element(By.XPATH, XPATH_button_maps)
-            Button_click_map.click()
-
-        Table_search = Driver.find_element(By.XPATH, XPATH_table)
+        # *
+        Table_search = Driver.find_element(By.XPATH, XPATH_stats_table)
         Header_row = Table_search.find_element(By.TAG_NAME, 'tr')
 
+        # *
         Header_row_agent = Header_row.find_element(By.TAG_NAME, 'th').text
         Header_get_column = Header_row.find_elements(By.TAG_NAME, 'th')
+        
+        # *
+        self.Header_list.append(Header_row_agent)
 
-        #print(Header_row_agent)
-        Header_list.append(Header_row_agent)
-
+        # *
         for i, Row in enumerate(Header_get_column):
 
             Columns = Header_get_column[i].find_elements(By.TAG_NAME, 'span')
@@ -152,43 +181,46 @@ class ValorantWebScrapping:
             for k, Column in enumerate(Columns):
 
                 #print('[' + str(k) + ']' + ' ////// ' + str(Column.text))
-                Header_list.append(Column.text)
+                self.Header_list.append(Column.text)
 
+        # *
         Table_search_body = Table_search.find_element(By.TAG_NAME, 'tbody')
         Table_search_body_rows = Table_search_body.find_elements(By.TAG_NAME, 'tr')
 
+        # * Get the data from each row
         for i, Row in enumerate(Table_search_body_rows):
 
             Table_columns = Table_search_body_rows[i].find_elements(By.TAG_NAME, 'td')
 
+        # * Create a table full of None
         Table_info = np.full([len(Table_search_body_rows), len(Table_columns)], None)
 
+        # * Data search of the body table and save the values inside the Table_info
         for i, Row in enumerate(Table_search_body_rows):
 
             Columns = Table_search_body_rows[i].find_elements(By.TAG_NAME, 'td')
 
             for j, Column in enumerate(Columns):
-
                 #print('[' + str(i) + ']' + '[' + str(j) + ']' + ' ////// ' + str(Column.text))
                 Table_info[i][j] = Column.text
 
-        Header_list_filtered = list(filter(None, Header_list))
+        # * Filter the header list
+        Header_list_filtered = list(filter(None, self.Header_list))
 
-        #print(Header_list_filtered)
-
+        # * Create a dataframe with the header we got early.
         Dataframe_table_header = pd.DataFrame(columns = Header_list_filtered)
         Dataframe_table_info = pd.DataFrame(Table_info)
 
+        # * Concat table body with headers
         Dataframe_table_info.columns = Dataframe_table_header.columns
-        Dataframe_table_header_info = pd.concat([Dataframe_table_header, Dataframe_table_info], ignore_index = True, sort = False)
+        Dataframe_table_complete = pd.concat([Dataframe_table_header, Dataframe_table_info], ignore_index = True, sort = False)
+        print(Dataframe_table_complete)
 
         # * Save dataframe in the folder given
-        #Dataframe_save_mias_name = 'Biclass_' + 'Dataframe_' + 'CNN_' + str(Technique) + '_' + str(Model_name_letters) + '.csv'
-        Dataframe_save = 'Dataframe_' + str(Header_row_agent) + '_' + str(Player_name) + '.csv'
-        Dataframe_save_folder = os.path.join(r'C:\Users\Cesar\Desktop\Python software\Web scraping', Dataframe_save)
+        self.save_figure(self.Save_dataframe, Dataframe_table_complete, Player_name, Header_row_agent, self.Folder_path)
 
-        Dataframe_table_header_info.to_csv(Dataframe_save_folder)
 
-        Driver.quit()
+f = ValorantWebScrapping(url = URL, folder = r'C:\Users\Cesar\Desktop\Python software\Web scraping', SD = True, table = 'Agents')
 
-        
+f.extract_info_table_valorant()
+#f.extract_info_agents_valorant()

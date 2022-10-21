@@ -131,3 +131,81 @@ def extract_info_tables_valorant(URL, Path_chrome_driver, XPATH_name, XPATH_butt
 
 extract_info_tables_valorant(URL, Path_chrome_driver, XPATH_name, XPATH_button, XPATH_table, Agents)
 extract_info_tables_valorant(URL, Path_chrome_driver, XPATH_name, XPATH_button, XPATH_table, Maps)
+
+
+@Utilities.time_func
+    def extract_info_agents_valorant(self):
+
+        # *
+        XPATH_button_update = '//*[@id="__next"]/main/div[4]/header/div/div/div[1]/button[1]'
+        XPATH_player_name = '//*[@id="__next"]/main/div[4]/header/div/div/h2/span[1]'
+        XPATH_stats_table = '//*[@id="__next"]/main/div[4]/div[2]/table'
+
+        # * Webdriver chrome activate
+        Driver = webdriver.Chrome(self.Path_chrome_driver)
+        Driver.get(self.URL)
+
+        # * Waiting time
+        Driver.implicitly_wait(self.Time_wait_value)
+        
+        # *
+        Button_click_update = Driver.find_element(By.XPATH, XPATH_button_update)
+        Button_click_update.click()
+
+        # *
+        Table_search = Driver.find_element(By.XPATH, XPATH_stats_table)
+        Header_row = Table_search.find_element(By.TAG_NAME, 'tr')
+
+        # *
+        Header_row_agent = Header_row.find_element(By.TAG_NAME, 'th').text
+        Header_get_column = Header_row.find_elements(By.TAG_NAME, 'th')
+        
+        # *
+        self.Header_list.append(Header_row_agent)
+
+        # *
+        for i, Row in enumerate(Header_get_column):
+
+            Columns = Header_get_column[i].find_elements(By.TAG_NAME, 'span')
+
+            for k, Column in enumerate(Columns):
+
+                #print('[' + str(k) + ']' + ' ////// ' + str(Column.text))
+                self.Header_list.append(Column.text)
+
+        # *
+        Table_search_body = Table_search.find_element(By.TAG_NAME, 'tbody')
+        Table_search_body_rows = Table_search_body.find_elements(By.TAG_NAME, 'tr')
+
+        # * Get the data from each row
+        for i, Row in enumerate(Table_search_body_rows):
+
+            Table_columns = Table_search_body_rows[i].find_elements(By.TAG_NAME, 'td')
+
+        # * Create a table full of None
+        Table_info = np.full([len(Table_search_body_rows), len(Table_columns)], None)
+
+        # * Data search of the body table and save the values inside the Table_info
+        for i, Row in enumerate(Table_search_body_rows):
+
+            Columns = Table_search_body_rows[i].find_elements(By.TAG_NAME, 'td')
+
+            for j, Column in enumerate(Columns):
+                #print('[' + str(i) + ']' + '[' + str(j) + ']' + ' ////// ' + str(Column.text))
+                Table_info[i][j] = Column.text
+
+        # * Filter the header list
+        Header_list_filtered = list(filter(None, self.Header_list))
+
+        # * Create a dataframe with the header we got early.
+        Dataframe_table_header = pd.DataFrame(columns = Header_list_filtered)
+        Dataframe_table_info = pd.DataFrame(Table_info)
+
+        # * Concat table body with headers
+        Dataframe_table_info.columns = Dataframe_table_header.columns
+        Dataframe_table_complete = pd.concat([Dataframe_table_header, Dataframe_table_info], ignore_index = True, sort = False)
+
+        # * Save dataframe in the folder given
+        self.save_figure(self.Save_dataframe, Dataframe_table_complete, XPATH_player_name, Header_row_agent, self.Folder_path)
+
+        Driver.quit()
