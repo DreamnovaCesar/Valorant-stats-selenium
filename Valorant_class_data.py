@@ -58,6 +58,16 @@ class Utilities(object):
     def chrome_window_settings(func):  # accepts a function
         @wraps(func)  # good practice https://docs.python.org/2/library/functools.html#functools.wraps
         def wrapper(self, *args, **kwargs):  # explicit self, which means this decorator better be used inside classes only
+            
+            # *
+            Agents = 'Agents'
+            Weapon = 'Weapon'
+            Maps = 'Maps'
+
+            # *
+            XPATH_button_update = '//*[@id="__next"]/main/div[4]/header/div/div/div[1]/button[1]'
+            XPATH_button_maps = '//*[@id="__next"]/main/div[4]/ul[2]/li[2]/button'
+            XPATH_button_Act_1 = '//*[@id="__next"]/main/div[4]/header/dl/div[2]/dd[1]/a'
 
             # * Webdriver chrome activate
             Driver = webdriver.Chrome(self.Path_chrome_driver)
@@ -66,11 +76,19 @@ class Utilities(object):
             # * Waiting time
             Driver.implicitly_wait(self.Time_wait_value)
 
-            XPATH_button_update = '//*[@id="__next"]/main/div[4]/header/div/div/div[1]/button[1]'
-        
+            # *
+            Button_click_Act_1 = Driver.find_element(By.XPATH, XPATH_button_Act_1)
+            Button_click_Act_1.click()
+
             # *
             Button_click_update = Driver.find_element(By.XPATH, XPATH_button_update)
             Button_click_update.click()
+
+            # *
+            if(self.Table_chosen is Maps):
+
+                Button_click_map = Driver.find_element(By.XPATH, XPATH_button_maps)
+                Button_click_map.click()
 
             result = func(self, Driver)
 
@@ -91,7 +109,7 @@ class ValorantWebScrapping(object):
         
         # *
         self.Path_chrome_driver = r"C:\Users\Cesar\Dropbox\PC\Desktop\New folder\chromedriver.exe"
-        self.Time_wait_value = 4
+        self.Time_wait_value = 6
         self.Header_list = []
 
         # * Folder attribute (ValueError, TypeError)
@@ -152,15 +170,10 @@ class ValorantWebScrapping(object):
         
         # *
         XPATH_stats_table = '//*[@id="__next"]/main/div[4]/div[2]/table'
-        XPATH_button_Act_1 = '//*[@id="__next"]/main/div[4]/header/dl/div[2]/dd[1]/a'
         XPATH_player_name = '//*[@id="__next"]/main/div[4]/header/div/div/h2/span[1]'
 
         # *
         Player_name = Driver.find_element(By.XPATH, XPATH_player_name).text
-
-        # *
-        Button_click_Act_1 = Driver.find_element(By.XPATH, XPATH_button_Act_1)
-        Button_click_Act_1.click()
 
         # *
         Table_search = Driver.find_element(By.XPATH, XPATH_stats_table)
@@ -220,7 +233,7 @@ class ValorantWebScrapping(object):
         self.save_figure(self.Save_dataframe, Dataframe_table_complete, Player_name, Header_row_agent, self.Folder_path)
 
 
-f = ValorantWebScrapping(url = URL, folder = r'C:\Users\Cesar\Desktop\Python software\Web scraping', SD = True, table = 'Agents')
+f = ValorantWebScrapping(url = URL, folder = r'C:\Users\Cesar\Desktop\Python software\Web scraping', SD = True, table = 'Maps')
 
 f.extract_info_table_valorant()
 #f.extract_info_agents_valorant()
